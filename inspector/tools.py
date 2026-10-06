@@ -163,10 +163,15 @@ def measure_region(ins: Inspection, box: im.Box) -> dict:
     }
 
 
-def build_tools(ins: Inspection) -> ToolRegistry:
+def build_tools(ins: Inspection, include: tuple[str, ...] = TOOL_NAMES) -> ToolRegistry:
     registry = ToolRegistry()
 
-    @registry.register
+    def tool(fn):
+        if fn.__name__ in include:
+            registry.add(fn)
+        return fn
+
+    @tool
     def view_overview() -> ToolResult:
         """See the whole photo, downscaled, with a labelled 8x8 grid (A1 = top-left, H8 = bottom-right).
         Use the cell names to point at areas in other tools."""
@@ -175,7 +180,7 @@ def build_tools(ins: Inspection) -> ToolRegistry:
         return ToolResult(f"Overview of the photo with an 8x8 grid ({ins.image.width}x{ins.image.height} px original).",
                           [im.to_image_data(img, "overview with grid")])
 
-    @registry.register
+    @tool
     def scan_anomalies(top_k: int = 3) -> ToolResult:
         """Run the deterministic texture detector (fitted on known-good leather only). Lists the most unusual
         regions with a normalised box, grid cells and score, plus a heatmap image. Scores near or below the
@@ -197,7 +202,7 @@ def build_tools(ins: Inspection) -> ToolRegistry:
         heat = im.heatmap_overlay(im.downscale(ins.image, CROP_SIDE), d.anomaly_map, [r.box for r in d.regions[:k]], vmax=max(2 * thr, d.score))
         return ToolResult(json.dumps(summary), [im.to_image_data(heat, "anomaly heatmap, numbered boxes = ranked regions")])
 
-    @registry.register
+    @tool
     def zoom(cell: str = "", box: list[float] | None = None) -> ToolResult:
         """Full-resolution close-up of one region. Give a grid cell like 'C4', a range like 'C4-D5', or a
         normalised box [x0, y0, x1, y1] (0..1, e.g. a box from scan_anomalies). The close-up has grid lines
@@ -209,7 +214,7 @@ def build_tools(ins: Inspection) -> ToolRegistry:
         return ToolResult(f"Close-up of box {list(used)} (cells {im.box_to_cells(used)}).",
                           [im.to_image_data(crop, f"zoom {im.box_to_cells(used)}")])
 
-    @registry.register
+    @tool
     def compare_reference(cell: str = "", box: list[float] | None = None) -> ToolResult:
         """Show the same region from a known-good leather photo next to this photo (left = this photo,
         right = good reference). Use it to judge whether something is a defect or normal grain."""
@@ -221,7 +226,7 @@ def build_tools(ins: Inspection) -> ToolRegistry:
         return ToolResult(f"Left: this photo, right: known-good reference, region {list(used)}.",
                           [im.to_image_data(pair, f"compare {im.box_to_cells(used)}")])
 
-    @registry.register
+    @tool
     def measure(cell: str = "", box: list[float] | None = None) -> str:
         """Deterministic measurements of a region: anomaly strength and area, elongation (line-like vs blob),
         brightness, colour shift, contrast, edge energy and line orientation, each as a z-score against normal
