@@ -9,7 +9,7 @@ Claude Code updates this at the end of every milestone. Real results only (model
 | M1 | Data and splits | done 2026-10-07 | `inspector/data.py`, seed 7, dev 62 / test 62, test locked |
 | M2 | Deterministic detector | done 2026-10-07 | patch stats + Mahalanobis, 2 scales; dev AUROC 1.0 |
 | M3 | Image tools | done 2026-10-07 | scan_anomalies, zoom, compare_reference, measure (+ view_overview for UI/one-shot) |
-| M4 | The agent | code done, real runs in progress | scripted tests pass; first real trace: correct fail, wrong type (cut -> poke) |
+| M4 | The agent | code done, dev run paused at 35/186 (k=3) | scripted tests pass; first real trace: correct fail, wrong type (cut -> poke) |
 | M5 | Evaluation harness | done (detector run), LLM runs pending | resumable JSONL + labelled summaries |
 | M6 | Confidence and escalation | code done, needs real agent runs | policy.py + report.py; test split not touched yet |
 | M7 | Demo and pitch | not started | |
@@ -27,7 +27,7 @@ Claude Code updates this at the end of every milestone. Real results only (model
 - Optional cloud cross-check: `groq:qwen/qwen3.8-27b` (free tier ~8K tokens/min, 200K/day, max 3 images/request: set INSPECTOR_MAX_IMAGES=3).
 
 ## Decisions
-- 2026-10-07: Build mode, not tutor mode (Jivi's call). CLAUDE.md updated; COURSE.md kept for reference only.
+- 2026-10-07: Build mode, not tutor mode (owner's call). CLAUDE.md updated; COURSE.md kept for reference only.
 - 2026-10-07: Real data from the HF mirror instead of the mvtec.com form (same files, same licence).
 - 2026-10-07: Local Ollama model as primary: free cloud vision tiers (Gemini ~100 req/day, Groq ~100 images/day) are too small for evals.
 - 2026-10-07: Split seed 7; odd-sized classes alternate their extra image between dev and test.
@@ -43,10 +43,12 @@ Claude Code updates this at the end of every milestone. Real results only (model
 | date | method | model | split | n | accuracy (auto) | false pass | false fail | notes |
 |---|---|---|---|---|---|---|---|---|
 | 2026-10-07 | detector only | — | dev | 62 | 96.8% [91.9, 100] | 0.0% [0, 0] | 12.5% [0, 30.8] | AUROC 1.0; top-1 box hits mask 45/46 (97.8%); 0.03 s/image |
+| 2026-10-07 | one-shot LLM (overview only) | ollama:qwen3-vl:8b-instruct | dev | 62 | 80.6% [71.0, 90.3] | 23.9% [12.5, 36.8] | 6.3% [0, 20.0] | defect-type acc 34.8% [21.6, 48.9]; 40/62 answers 'high' confidence; calls most cuts 'poke'; 6.5 s/image |
 
 Finding: on leather the deterministic detector already separates good from defective perfectly on dev (AUROC 1.0).
 The agent cannot beat it on pass/fail; its job is to name the defect type, explain, and reduce false fails / escalate well.
 
 ## Open questions
+- Agent dev run (k=3) paused at 35/186 records; resume with `python -m inspector.evaluate --method agent --split dev --repeat 3`.
 - Does the agent's defect-type accuracy justify ~20-30 s and several model calls per part?
 - Which signal best predicts the agent's errors: self-reported, k=3 agreement, detector margin, or agent-vs-detector disagreement?

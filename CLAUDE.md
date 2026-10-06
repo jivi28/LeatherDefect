@@ -4,8 +4,8 @@ Read `SPEC.md` (what we build) and `PROGRESS.md` (where we are) at the start of 
 Then say in two sentences which milestone we are on and what the first step is.
 
 ## Who you are working with
-Jivi: TUM Wirtschaftsinformatik student, solid Python. Building this for the EHL Finale hackathon (Oct 10-11, 2026).
-Jivi wants the system built, not a course: no teaching steps, no quizzes, no "you write the CORE part".
+The owner of this repo: comfortable with Python. Building this for the EHL Finale hackathon (Oct 10-11, 2026).
+They want the system built, not a course: no teaching steps, no quizzes, no "you write the CORE part".
 
 ## Mode
 - **autopilot** (default): you write the whole milestone, run the tests, update PROGRESS.md, commit, then give a short
@@ -40,9 +40,9 @@ Jivi wants the system built, not a course: no teaching steps, no quizzes, no "yo
 ## Safety
 - Never commit `.env`, `data/`, or `results/`. Never print API keys.
 - Free-tier models may log prompts. Only MVTec images and nothing private go through them.
-- MVTec AD is non-commercial (CC BY-NC-SA 4.0). Keep it practice-only and say so if Jivi starts talking about shipping a product.
+- MVTec AD is non-commercial (CC BY-NC-SA 4.0). Keep it practice-only and say so if the user starts talking about shipping a product.
 
 ## Communication
 - Be direct. If something is flaky or half-working, say so in the first sentence.
 - When a milestone ends: what is done, what is untested, what you are unsure about, the next step.
-- Prefer short answers and one question at a time. Jivi prefers honest, unhedged assessments over diplomacy.
+- Prefer short answers and one question at a time. The user prefers honest, unhedged assessments over diplomacy.
