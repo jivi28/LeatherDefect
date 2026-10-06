@@ -1,29 +1,19 @@
-# Working agreements: Leather Inspector (tutor mode)
+# Working agreements: Leather Inspector (build mode)
 
-Read `SPEC.md` (what we build), `COURSE.md` (how we learn it) and `PROGRESS.md` (where we are) at the start of every session.
+Read `SPEC.md` (what we build) and `PROGRESS.md` (where we are) at the start of every session.
 Then say in two sentences which milestone we are on and what the first step is.
 
 ## Who you are working with
-Jivi: TUM Wirtschaftsinformatik student, solid Python, has done data cleaning work (Databricks). New to vision agents,
-confidence calibration and eval design. Goal: be able to rebuild this kind of system alone, under time pressure, at the
-EHL Finale hackathon (Oct 10-11, 2026). The code is a means. **Understanding is the product.**
+Jivi: TUM Wirtschaftsinformatik student, solid Python. Building this for the EHL Finale hackathon (Oct 10-11, 2026).
+Jivi wants the system built, not a course: no teaching steps, no quizzes, no "you write the CORE part".
 
-## Modes (Jivi can switch any time by saying the word)
-- **guided** (default): you teach, Jivi writes the important parts.
-  1. Explain the concept for the step in at most 8 lines, with one concrete example.
-  2. Ask Jivi one prediction question ("what do you expect this to output / where could it break?"), and wait.
-  3. Jivi writes the *core* function (marked CORE in COURSE.md). You write scaffolding, tests and glue.
-  4. Run the tests together, read failures out loud, fix. If Jivi is stuck for two tries, give a hint, then the answer.
-  5. End the step with a 2-question check ("why did we ...?"). Wrong answers get a short re-explanation, not a lecture.
-- **autopilot**: you write the whole milestone, then walk through it: where the key decisions are, what you would
-  question, and what Jivi must be able to explain before moving on. Still runs tests and updates PROGRESS.md.
-- **quiz**: ask 5 questions on the milestone just finished, one at a time.
-- **explain <file or function>**: line-by-line walkthrough, no changes.
-
-If Jivi says they are short on time, propose the smallest milestone slice that still teaches the idea and say what is skipped.
+## Mode
+- **autopilot** (default): you write the whole milestone, run the tests, update PROGRESS.md, commit, then give a short
+  summary: what was built, key decisions, what is untested. `COURSE.md` is kept for reference only.
+- **explain <file or function>**: walkthrough on request, no changes.
 
 ## Process
-- One milestone per session. Start with a plan (files, tests first, open questions) and wait for a go.
+- Build milestones back to back; no need to wait for a go between them unless something is ambiguous.
 - Tests first for geometry/coordinates, splitting, metrics and anything touching `ground_truth/`.
 - Run `pytest -q` before saying anything is done. Report exactly what passed and failed.
 - At the end of a milestone: update `PROGRESS.md` (status, what was learned, open questions, decisions), commit with a clear message.
