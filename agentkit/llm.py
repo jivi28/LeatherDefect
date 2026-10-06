@@ -7,6 +7,7 @@ tries the next provider when one is rate-limited, down, or rejects the request.
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from dataclasses import dataclass, field
@@ -62,6 +63,7 @@ class OpenAICompatLLM:
         model: str,
         label: str | None = None,
         temperature: float | None = None,
+        extra_body: dict | None = None,
         timeout: float = 90.0,
         max_retries: int = 2,
     ) -> None:
@@ -70,6 +72,8 @@ class OpenAICompatLLM:
         self.label = label or model
         # Some newer models reject a non-default temperature, so it is only sent when set.
         self.temperature = temperature
+        # Provider-specific request fields (e.g. Ollama's {"think": false}); only sent when set.
+        self.extra_body = extra_body or None
 
     def chat(self, messages: list[dict], tools: list[dict] | None = None, tool_choice: str = "auto") -> Reply:
         kwargs: dict = {"model": self.model, "messages": messages}
@@ -78,6 +82,8 @@ class OpenAICompatLLM:
             kwargs["tool_choice"] = tool_choice
         if self.temperature is not None:
             kwargs["temperature"] = self.temperature
+        if self.extra_body:
+            kwargs["extra_body"] = self.extra_body
         try:
             response = self.client.chat.completions.create(**kwargs)
         except openai.OpenAIError as exc:
@@ -135,12 +141,26 @@ def from_env(env: Mapping[str, str] | None = None) -> LLM:
     LLM_PROVIDER=openai is accepted for a single provider (default: openai).
     Custom endpoint: provider "custom" with LLM_BASE_URL, LLM_API_KEY and a model.
     LLM_TEMPERATURE optionally sets the temperature.
+    LLM_EXTRA_BODY_<PROVIDER> optionally adds provider-specific JSON fields, e.g. LLM_EXTRA_BODY_OLLAMA='{"think": false}'.
     """
     env = os.environ if env is None else env
     spec = env.get("LLM_PROVIDERS") or env.get("LLM_PROVIDER") or "openai"
     temperature = float(env["LLM_TEMPERATURE"]) if env.get("LLM_TEMPERATURE") else None
     llms: list[LLM] = []
     skipped: list[str] = []
+
+    def extra(provider: str) -> dict | None:
+        raw = env.get(f"LLM_EXTRA_BODY_{provider.upper()}")
+        if not raw:
+            return None
+        try:
+            value = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ConfigError(f"LLM_EXTRA_BODY_{provider.upper()} is not valid JSON: {exc.msg}") from exc
+        if not isinstance(value, dict):
+            raise ConfigError(f"LLM_EXTRA_BODY_{provider.upper()} must be a JSON object")
+        return value
+
     for item in [s.strip() for s in spec.split(",") if s.strip()]:
         provider, _, model = item.partition(":")
         provider = provider.lower()
@@ -149,7 +169,7 @@ def from_env(env: Mapping[str, str] | None = None) -> LLM:
             if not (base_url and key and (model or default_model)):
                 skipped.append("custom (needs LLM_BASE_URL, LLM_API_KEY, LLM_MODEL)")
                 continue
-            llms.append(OpenAICompatLLM(base_url=base_url, api_key=key, model=model or default_model or "", label=f"custom:{model or default_model}", temperature=temperature))
+            llms.append(OpenAICompatLLM(base_url=base_url, api_key=key, model=model or default_model or "", label=f"custom:{model or default_model}", temperature=temperature, extra_body=extra("custom")))
             continue
         if provider not in PRESETS:
             raise ConfigError(f"Unknown provider '{provider}'. Known: {', '.join(PRESETS)}, custom.")
@@ -159,7 +179,7 @@ def from_env(env: Mapping[str, str] | None = None) -> LLM:
             skipped.append(f"{provider} (set {key_env})")
             continue
         chosen = model or env.get("LLM_MODEL") or default_model
-        llms.append(OpenAICompatLLM(base_url=base_url, api_key=key, model=chosen, label=f"{provider}:{chosen}", temperature=temperature))
+        llms.append(OpenAICompatLLM(base_url=base_url, api_key=key, model=chosen, label=f"{provider}:{chosen}", temperature=temperature, extra_body=extra(provider)))
     if not llms:
         raise ConfigError(
             "No usable LLM provider. Missing: " + (", ".join(skipped) or spec) + ". See .env.example."
