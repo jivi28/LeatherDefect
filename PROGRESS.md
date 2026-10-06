@@ -37,6 +37,7 @@ Claude Code updates this at the end of every milestone. Real results only (model
 - 2026-10-07: Runs that fail to submit fall back to fail/unknown/low/needs_second_look (never auto-pass); the self signal escalates them.
 - 2026-10-07: Measurement-margin signal (SPEC 5.4) not built separately; the detector-margin signal covers the same idea with less code.
 - 2026-10-07: Detector region picking suppresses a defect's whole halo, so ranked regions are distinct spots (was: 3 boxes around one cut).
+- 2026-10-07: `scripts/download_mvtec_leather.py` fetches leather from the HF mirror and imports it (resumable, cache in `.cache/`).
 - 2026-10-07: agentkit gained `LLM_EXTRA_BODY_<PROVIDER>` (tested) to pass Ollama-only fields.
 
 ## Results (real runs only)

@@ -132,3 +132,26 @@ def test_render_summarises_and_main_exit_codes(tmp_path, capsys, monkeypatch):
 
 def test_reply_type_still_importable():
     assert Reply is not None
+
+
+def test_download_listing_rejects_unsafe_paths():
+    from scripts.download_mvtec_leather import safe_entries
+
+    listing = [
+        {"type": "file", "path": "leather/train/good/000.png", "size": 10},
+        {"type": "directory", "path": "leather/train"},
+        {"type": "file", "path": "leather/../evil.png", "size": 1},
+        {"type": "file", "path": "/leather/abs.png", "size": 1},
+        {"type": "file", "path": "wood/train/good/000.png", "size": 1},
+    ]
+    assert safe_entries(listing) == [("leather/train/good/000.png", 10)]
+
+
+def test_download_skips_complete_files(tmp_path, monkeypatch):
+    from scripts import download_mvtec_leather as d
+
+    target = tmp_path / "leather" / "x.png"
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"12345")
+    monkeypatch.setattr(d.urllib.request, "urlretrieve", lambda *a: (_ for _ in ()).throw(AssertionError("no network")))
+    assert d.download_one("leather/x.png", 5, tmp_path) is None
