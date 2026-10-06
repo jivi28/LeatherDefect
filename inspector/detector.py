@@ -138,10 +138,14 @@ def top_regions(anomaly_map: np.ndarray, k: int = 3, min_size: float = 0.08) -> 
         bw, bh = max(x1 - x0, min_size), max(y1 - y0, min_size)
         box = (max(0.0, cx - bw / 2), max(0.0, cy - bh / 2), min(1.0, cx + bw / 2), min(1.0, cy + bh / 2))
         out.append(Region(tuple(round(float(v), 3) for v in box), round(peak, 3), round(float(blob.mean()), 4)))  # type: ignore[arg-type]
-        # suppress the blob plus a small margin so the next peak is somewhere else
+        # suppress the whole halo around this peak (not just its core) plus a margin, so the next
+        # region is a genuinely different spot instead of the edge of the same defect
+        halo_level = peak - 0.8 * max(peak - float(np.median(anomaly_map)), EPS)
+        halo = _flood(work >= halo_level, (int(y), int(x)))
+        hy, hx = np.nonzero(halo)
         pad = 2
-        ys0, ys1 = max(0, ys.min() - pad), min(h, ys.max() + 1 + pad)
-        xs0, xs1 = max(0, xs.min() - pad), min(w, xs.max() + 1 + pad)
+        ys0, ys1 = max(0, hy.min() - pad), min(h, hy.max() + 1 + pad)
+        xs0, xs1 = max(0, hx.min() - pad), min(w, hx.max() + 1 + pad)
         work[ys0:ys1, xs0:xs1] = -np.inf
     return out
 
