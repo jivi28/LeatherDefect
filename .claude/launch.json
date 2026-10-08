@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "leather-inspector-ui",
+      "runtimeExecutable": ".venv/bin/uvicorn",
+      "runtimeArgs": ["inspector.app.server:app", "--port", "8000"],
+      "port": 8000
+    }
+  ]
+}

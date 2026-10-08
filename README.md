@@ -7,9 +7,9 @@ then sends uncertain cases to a human (**review**). The core question: does "low
 Data: the `leather` category of [MVTec AD](https://www.mvtec.com/company/research/datasets/mvtec-ad), CC BY-NC-SA 4.0.
 **Non-commercial, practice only.** Everything runs locally: a free Ollama vision model, no API keys, no rate limits.
 
-**Hand-off status (2026-10-07):** milestones M0-M5 are built and tested (182 offline tests pass). M6 (escalation) and
-M7 (demo) are coded. Still missing: the **full agent run on dev**, the **report**, the **one-time test run**,
-and the **pitch**. Section 4 is the to-do list.
+**Status (2026-10-08):** M0-M5 are done, M6 is done on dev, and the M7 demo UI works (182 offline tests pass). The agent beats the plain
+model on the same 24 dev photos (section 3). Still missing: the **full 62-photo dev run (k=3)**, the **one-time test run** and the
+**pitch**. Section 4 is the to-do list.
 
 ---
 
@@ -98,13 +98,23 @@ More detail: `SPEC.md` (the full spec), `PROGRESS.md` (status, decisions, result
 
 ---
 
-## 3. Results so far (real data, dev split, n=62, 2026-10-07)
+## 3. Results so far (real data, dev split)
 
 | Method | Model | Accuracy | False pass | False fail | Defect-type acc | Time/photo |
 |---|---|---|---|---|---|---|
 | Detector only | none | 96.8% [91.9, 100] | **0.0%** | 12.5% [0, 30.8] | n/a (cannot name types) | 0.03 s |
 | One-shot LLM | qwen3-vl:8b-instruct | 80.6% [71.0, 90.3] | **23.9%** [12.5, 36.8] | 6.3% [0, 20.0] | 34.8% [21.6, 48.9] | 6.5 s |
-| Agent | qwen3-vl:8b-instruct | *not finished* | | | | ~20-25 s |
+
+**Agent vs base model on the same 24 dev photos (2026-10-08, k=1, `--limit 24`):**
+
+| Method | Accuracy | False pass | False fail | Defect-type acc | Time/photo |
+|---|---|---|---|---|---|
+| Detector only | 100% | 0.0% | 0.0% | n/a | 0.03 s |
+| One-shot LLM | 75.0% [54.2, 91.7] | **30.0%** [10.5, 52.4] | 0.0% | 30.0% [10.5, 50.0] | 6.1 s |
+| **Agent (tools)** | **95.8%** [87.5, 100] | **0.0%** | 25.0% (1 of 4 good) | **55.0%** [31.6, 73.9] | 19.4 s |
+| Agent + escalation policy | 100% of auto decisions, 1 of 24 sent to review | 0.0% | 0.0% | 55.0% | 19.4 s |
+
+The policy row is optimistic: the threshold was chosen and scored on the same 24 photos. The test split has not been run.
 
 What this means:
 - On leather the detector alone already separates good from defective perfectly on dev (AUROC 1.0, top box hits the

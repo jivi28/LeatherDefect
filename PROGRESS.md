@@ -9,10 +9,10 @@ Claude Code updates this at the end of every milestone. Real results only (model
 | M1 | Data and splits | done 2026-10-07 | `inspector/data.py`, seed 7, dev 62 / test 62, test locked |
 | M2 | Deterministic detector | done 2026-10-07 | patch stats + Mahalanobis, 2 scales; dev AUROC 1.0 |
 | M3 | Image tools | done 2026-10-07 | scan_anomalies, zoom, compare_reference, measure (+ view_overview for UI/one-shot) |
-| M4 | The agent | code done, dev run paused at 35/186 (k=3) | scripted tests pass; first real trace: correct fail, wrong type (cut -> poke) |
-| M5 | Evaluation harness | done (detector run), LLM runs pending | resumable JSONL + labelled summaries |
-| M6 | Confidence and escalation | code done, needs real agent runs | policy.py + report.py; test split not touched yet |
-| M7 | Demo and pitch | not started | |
+| M4 | The agent | done 2026-10-08 | real agent run on a 24-photo dev subset (k=1) | scripted tests pass; first real trace: correct fail, wrong type (cut -> poke) |
+| M5 | Evaluation harness | done 2026-10-08 | detector, one-shot (62) and agent (24) on dev | resumable JSONL + labelled summaries |
+| M6 | Confidence and escalation | dev done, test not run | disagreement signal chosen on dev (AUROC 1.0, but only 1 error in 24); test split untouched |
+| M7 | Demo and pitch | demo done 2026-10-08, pitch not written | UI tested in browser: fold photo -> fail/fold/high, 19.6 s |
 | M8 | Stretch | dropped for now | |
 
 ## Data in use
@@ -45,11 +45,17 @@ Claude Code updates this at the end of every milestone. Real results only (model
 |---|---|---|---|---|---|---|---|---|
 | 2026-10-07 | detector only | — | dev | 62 | 96.8% [91.9, 100] | 0.0% [0, 0] | 12.5% [0, 30.8] | AUROC 1.0; top-1 box hits mask 45/46 (97.8%); 0.03 s/image |
 | 2026-10-07 | one-shot LLM (overview only) | ollama:qwen3-vl:8b-instruct | dev | 62 | 80.6% [71.0, 90.3] | 23.9% [12.5, 36.8] | 6.3% [0, 20.0] | defect-type acc 34.8% [21.6, 48.9]; 40/62 answers 'high' confidence; calls most cuts 'poke'; 6.5 s/image |
+| 2026-10-08 | detector only | — | dev subset (same 24) | 24 | 100% [100, 100] | 0.0% [0, 0] | 0.0% [0, 0] | |
+| 2026-10-08 | one-shot LLM | ollama:qwen3-vl:8b-instruct | dev subset (same 24) | 24 | 75.0% [54.2, 91.7] | 30.0% [10.5, 52.4] | 0.0% [0, 0] | defect-type acc 30.0% [10.5, 50.0] |
+| 2026-10-08 | agent, k=1 | ollama:qwen3-vl:8b-instruct | dev subset (`--limit 24`) | 24 | 95.8% [87.5, 100] | 0.0% [0, 0] | 25.0% [0, 100] (1 of 4 good) | defect-type acc 55.0% [31.6, 73.9]; 19.4 s/image; 21/24 'high' |
+| 2026-10-08 | agent + policy (disagreement, chosen on same dev) | ollama:qwen3-vl:8b-instruct | dev subset | 24 | 100% (optimistic: chosen and scored on the same data) | 0.0% | 0.0% | 1 of 24 escalated (4%) |
 
 Finding: on leather the deterministic detector already separates good from defective perfectly on dev (AUROC 1.0).
 The agent cannot beat it on pass/fail; its job is to name the defect type, explain, and reduce false fails / escalate well.
 
 ## Open questions
+- Not done: full dev agent run (62, k=3), the one-time test run, the pitch outline. Tonight's numbers are a 24-photo dev subset only.
+- The agent's single error was a false fail (good -> color, medium confidence); the policy escalates it because the detector disagreed.
 - Agent dev run (k=3) paused at 35/186 records; resume with `python -m inspector.evaluate --method agent --split dev --repeat 3`.
 - Does the agent's defect-type accuracy justify ~20-30 s and several model calls per part?
 - Which signal best predicts the agent's errors: self-reported, k=3 agreement, detector margin, or agent-vs-detector disagreement?
