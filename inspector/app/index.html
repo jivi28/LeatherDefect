@@ -5,88 +5,181 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Leather Inspector</title>
 <style>
-  :root { --bg:#f6f4f1; --card:#fff; --ink:#1d1b19; --muted:#6b655e; --line:#e3ded7;
-          --pass:#1f7a4d; --fail:#b3261e; --review:#a86400; --accent:#7a4a24; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#151311; --card:#1f1c19; --ink:#efeae4; --muted:#a39b91; --line:#35302b;
-          --pass:#4cc38a; --fail:#ff7b72; --review:#e6a23c; --accent:#d29b6c; } }
+  :root { --bg:#f6f4f1; --card:#fff; --ink:#1d1b19; --muted:#6b655e; --line:#e3ded7; --soft:#f1ece6;
+          --pass:#1f7a4d; --fail:#b3261e; --review:#a86400; --accent:#7a4a24; --focus:#1d6fd6; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#151311; --card:#1f1c19; --ink:#efeae4; --muted:#a39b91; --line:#35302b; --soft:#2a2622;
+          --pass:#4cc38a; --fail:#ff7b72; --review:#e6a23c; --accent:#d29b6c; --focus:#58a6ff; } }
   * { box-sizing:border-box }
   body { margin:0; font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif; background:var(--bg); color:var(--ink) }
-  header { padding:20px 24px 8px; display:flex; gap:12px; align-items:baseline; flex-wrap:wrap }
+  header { padding:18px 24px 6px; display:flex; gap:12px; align-items:baseline; flex-wrap:wrap }
   h1 { font-size:20px; margin:0 } .muted { color:var(--muted); font-size:13px }
-  main { display:grid; grid-template-columns:minmax(260px,340px) 1fr; gap:16px; padding:8px 24px 32px }
-  @media (max-width:820px) { main { grid-template-columns:1fr; padding:8px 16px 24px } header { padding:16px } }
+  main { display:grid; grid-template-columns:minmax(300px,440px) 1fr; gap:16px; padding:8px 24px 32px; align-items:start }
+  @media (max-width:860px) { main { grid-template-columns:1fr; padding:8px 16px 24px } header { padding:16px } }
+  main > *, .ev > div { min-width:0 }
+  .action small, .thought, pre, .warn { overflow-wrap:anywhere }
   .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px }
-  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; max-height:420px; overflow:auto }
-  .grid img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:6px; cursor:pointer; border:2px solid transparent }
+  .left { display:flex; flex-direction:column; gap:16px; position:sticky; top:12px }
+  @media (max-width:860px) { .left { position:static } }
+  .grid { display:grid; grid-template-columns:repeat(6,1fr); gap:5px; margin-top:8px }
+  .grid img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:5px; cursor:pointer; border:2px solid transparent }
   .grid img.sel { border-color:var(--accent) }
   button { font:inherit; padding:8px 14px; border-radius:8px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer }
   button.ghost { background:transparent; color:var(--accent) } button:disabled { opacity:.5; cursor:wait }
   .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px }
+  .stage { position:relative; width:100%; aspect-ratio:1; border-radius:8px; overflow:hidden; background:var(--soft) }
+  .stage img { width:100%; height:100%; display:block }
+  .stage .empty { position:absolute; inset:0; display:grid; place-items:center; color:var(--muted); font-size:13px; text-align:center; padding:20px }
+  .box { position:absolute; border:2px dashed rgba(255,255,255,.75); border-radius:3px; transition:all .25s }
+  .box .tag { position:absolute; top:-1px; left:-1px; font-size:11px; background:rgba(0,0,0,.55); color:#fff; padding:0 4px; border-radius:2px }
+  .box.focus { border:3px solid var(--focus); box-shadow:0 0 0 9999px rgba(0,0,0,.28); animation:pulse 1s ease-in-out infinite }
+  .box.seen { border:2px solid rgba(88,166,255,.55) }
+  .box.final { border:3px solid var(--fail); box-shadow:none; animation:none }
+  @keyframes pulse { 50% { border-color:#fff } }
   .badge { display:inline-block; padding:4px 12px; border-radius:999px; font-weight:700; letter-spacing:.04em; color:#fff; text-transform:uppercase }
   .pass { background:var(--pass) } .fail { background:var(--fail) } .review { background:var(--review) }
-  .step { border-top:1px solid var(--line); padding:10px 0 } .step:first-child { border-top:0 }
-  .step code { font-size:12.5px; word-break:break-all } .step pre { white-space:pre-wrap; font-size:12px; color:var(--muted); margin:6px 0 0; max-height:120px; overflow:auto }
-  .step img { max-width:min(100%,380px); border-radius:6px; margin-top:6px; display:block }
-  ul { margin:6px 0 0 18px; padding:0 } .kv { display:grid; grid-template-columns:auto 1fr; gap:2px 12px; font-size:13px; margin-top:8px }
-  .warn { color:var(--review); font-size:13px }
+  .status { display:flex; gap:10px; align-items:center; font-size:14px }
+  .spin { width:14px; height:14px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:sp .8s linear infinite; display:inline-block }
+  @keyframes sp { to { transform:rotate(360deg) } }
+  .ev { display:grid; grid-template-columns:52px 1fr; gap:10px; padding:10px 0; border-top:1px solid var(--line); animation:in .25s ease-out }
+  .ev:first-child { border-top:0 } @keyframes in { from { opacity:0; transform:translateY(4px) } }
+  .t { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; padding-top:2px }
+  .thought { font-style:italic; background:var(--soft); border-radius:8px; padding:8px 10px }
+  .thought::before { content:"thinking · "; font-style:normal; font-size:12px; color:var(--muted) }
+  .action { font-weight:600 } .action small { font-weight:400; color:var(--muted) }
+  .ev img { max-width:min(100%,420px); border-radius:6px; margin-top:6px; display:block }
+  details { margin-top:6px } summary { cursor:pointer; color:var(--muted); font-size:12.5px }
+  pre { white-space:pre-wrap; font-size:12px; color:var(--muted); margin:6px 0 0; max-height:160px; overflow:auto }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:2px 12px; font-size:13px; margin-top:8px }
+  ul { margin:6px 0 0 18px; padding:0 } .warn { color:var(--review); font-size:13px }
 </style>
 </head>
 <body>
 <header><h1>Leather Inspector</h1><span class="muted" id="meta">loading…</span></header>
 <main>
+  <div class="left">
+    <section class="card">
+      <strong>Pick a photo</strong> <span class="muted">or upload one</span>
+      <div class="grid" id="samples"></div>
+      <div class="row"><input type="file" id="file" accept=".png,.jpg,.jpeg"></div>
+      <div class="row"><button id="go" disabled>Inspect</button></div>
+    </section>
+    <section class="card">
+      <div class="stage" id="stage"><div class="empty">The photo appears here. While the agent works, the area it is looking at is highlighted.</div></div>
+    </section>
+  </div>
   <section class="card">
-    <strong>Pick a photo</strong>
-    <div class="grid" id="samples"></div>
-    <div class="row"><input type="file" id="file" accept=".png,.jpg,.jpeg"></div>
-    <div class="row"><button id="go" disabled>Inspect</button><span class="muted" id="busy"></span></div>
+    <div class="status" id="status"><span class="muted">Pick a photo and press Inspect to watch the agent work live.</span></div>
+    <div id="verdict"></div>
+    <div id="timeline" style="margin-top:8px"></div>
   </section>
-  <section class="card" id="out"><span class="muted">The verdict, the policy decision and every step the agent took appear here.</span></section>
 </main>
 <script>
 const $ = s => document.querySelector(s);
-let picked = null, policy = null;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let picked = null, timer = null, t0 = 0, busy = false;
+
+const cell = (x, y) => String.fromCharCode(65 + Math.min(7, Math.floor(x * 8))) + (Math.min(7, Math.floor(y * 8)) + 1);
+const cells = b => { const a = cell(b[0], b[1]), z = cell(Math.max(0, b[2] - 1e-6), Math.max(0, b[3] - 1e-6)); return a === z ? a : `${a}-${z}`; };
+const ACT = {
+  scan_anomalies: () => "Scanning the whole photo for unusual texture",
+  zoom: b => `Zooming into ${b ? cells(b) : "a region"}`,
+  compare_reference: b => `Comparing ${b ? cells(b) : "a region"} with known-good leather`,
+  measure: b => `Measuring ${b ? cells(b) : "a region"}`,
+};
 
 fetch("/api/samples").then(r => r.json()).then(d => {
-  policy = d.policy;
-  $("#meta").textContent = `model ${d.model} · ` + (policy ? `escalation: ${policy.signal} > ${(+policy.threshold).toPrecision(3)} (chosen on dev)` : "no dev policy yet: showing raw agent decisions");
+  $("#meta").textContent = `model ${d.model} · ` + (d.policy ? `escalation: ${d.policy.signal} > ${(+d.policy.threshold).toPrecision(3)} (chosen on dev)` : "no dev policy yet: raw agent decisions");
   for (const s of d.samples) {
     const img = document.createElement("img");
-    img.src = "/api/photo/" + s; img.alt = "sample photo"; img.loading = "lazy";
-    img.onclick = () => { document.querySelectorAll(".grid img").forEach(i => i.classList.remove("sel")); img.classList.add("sel"); picked = s; $("#file").value = ""; $("#go").disabled = false; };
+    img.src = "/api/photo/" + s; img.alt = "sample photo"; img.loading = "lazy"; img.title = s;
+    img.onclick = () => { if (busy) return; document.querySelectorAll(".grid img").forEach(i => i.classList.remove("sel")); img.classList.add("sel"); picked = s; $("#file").value = ""; $("#go").disabled = false; };
     $("#samples").appendChild(img);
   }
 });
 $("#file").onchange = () => { picked = null; document.querySelectorAll(".grid img").forEach(i => i.classList.remove("sel")); $("#go").disabled = !$("#file").files.length; };
 
+function setStatus(html, spinning = true) { $("#status").innerHTML = (spinning ? '<span class="spin"></span>' : "") + html; }
+function elapsed() { return ((performance.now() - t0) / 1000).toFixed(1); }
+function add(t, html) {
+  const el = document.createElement("div"); el.className = "ev";
+  el.innerHTML = `<div class="t">${t != null ? (+t).toFixed(1) + "s" : ""}</div><div>${html}</div>`;
+  $("#timeline").appendChild(el); el.scrollIntoView({block: "nearest", behavior: "smooth"}); return el;
+}
+function drawBox(b, cls, tag) {
+  const d = document.createElement("div"); d.className = "box " + cls;
+  Object.assign(d.style, {left: b[0] * 100 + "%", top: b[1] * 100 + "%", width: (b[2] - b[0]) * 100 + "%", height: (b[3] - b[1]) * 100 + "%"});
+  if (tag) d.innerHTML = `<span class="tag">${esc(tag)}</span>`;
+  $("#stage").appendChild(d); return d;
+}
+function settleFocus() { document.querySelectorAll(".box.focus").forEach(b => { b.classList.remove("focus"); b.classList.add("seen"); }); }
+
+function handle(e) {
+  if (e.type === "start") {
+    $("#stage").innerHTML = `<img src="${e.overview}" alt="photo being inspected">`;
+  } else if (e.type === "step") {
+    setStatus(`Step ${e.step}: the model is thinking… <span class="muted">${elapsed()}s</span>`);
+  } else if (e.type === "thought") {
+    add(e.t, `<div class="thought">${esc(e.text)}</div>`);
+  } else if (e.type === "tool_call") {
+    settleFocus();
+    if (e.box) drawBox(e.box, "focus");
+    const label = (ACT[e.name] || (() => e.name))(e.box);
+    setStatus(`${esc(label)}… <span class="muted">${elapsed()}s</span>`);
+    add(e.t, `<div class="action">${esc(label)} <small>${esc(e.name)}(${esc(e.args)})</small></div>`);
+  } else if (e.type === "tool_result") {
+    if (e.name === "scan_anomalies") e.boxes.forEach((b, i) => drawBox(b, "", String(i + 1)));
+    let body = e.ok ? "" : `<div class="warn">${esc(e.text)}</div>`;
+    body += e.images.map(u => `<img src="${u}" alt="${esc(e.name)} result">`).join("");
+    if (e.ok) body += `<details><summary>tool output</summary><pre>${esc(e.text)}</pre></details>`;
+    add(e.t, body);
+  } else if (e.type === "submitting") {
+    settleFocus(); setStatus(`Writing the verdict… <span class="muted">${elapsed()}s</span>`);
+  } else if (e.type === "retry") {
+    add(e.t, `<div class="warn">Answer rejected, the model is fixing it: ${esc(e.text)}</div>`);
+  } else if (e.type === "nudge" || e.type === "error" && e.t != null) {
+    add(e.t, `<div class="warn">${esc(e.text || e.message)}</div>`);
+  } else if (e.type === "error") {
+    setStatus(`<span class="warn">Failed: ${esc(e.message)}</span>`, false);
+  } else if (e.type === "done") {
+    finish(e);
+  }
+}
+
+function finish(d) {
+  const v = d.verdict || {};
+  settleFocus();
+  if (v.region && v.decision === "fail") drawBox([v.region.x0, v.region.y0, v.region.x1, v.region.y1], "final", v.defect_type);
+  setStatus(`<span class="badge ${esc(d.final)}">${esc(d.final)}</span>` +
+    (d.final === "review" ? ` sent to a human (the agent said <b>${esc(v.decision)}</b>)` : "") +
+    ` <span class="muted">${d.seconds}s · ${d.tool_calls} tool calls</span>`, false);
+  const sig = Object.entries(d.signals).map(([k, x]) => `<span>${esc(k)} uncertainty</span><span>${(+x).toFixed(2)}</span>`).join("");
+  $("#verdict").innerHTML = `<div class="kv"><span>defect</span><span><b>${esc(v.defect_type)}</b></span>
+    <span>confidence</span><span>${esc(v.confidence)}</span><span>detector</span><span>${d.detector.score} (normal ≤ ${d.detector.threshold})</span>${sig}</div>
+    <ul>${(v.reasons || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul>` +
+    (d.final !== "review" ? `<div class="row"><button class="ghost" onclick="this.outerHTML='<span class=&quot;warn&quot;>Marked for human review.</span>'">Escalate to human</button></div>` : "");
+}
+
 $("#go").onclick = async () => {
-  $("#go").disabled = true; $("#busy").textContent = "inspecting… (about 20-30 s)";
+  busy = true; $("#go").disabled = true; $("#timeline").innerHTML = ""; $("#verdict").innerHTML = "";
+  t0 = performance.now(); setStatus("Starting…");
+  timer = setInterval(() => { const m = $("#status .muted"); if (m && $("#status .spin")) m.textContent = elapsed() + "s"; }, 200);
   try {
     let r;
-    if ($("#file").files.length) { const f = new FormData(); f.append("file", $("#file").files[0]); r = await fetch("/api/inspect/upload", {method:"POST", body:f}); }
-    else r = await fetch("/api/inspect/sample", {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({path:picked})});
-    if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
-    render(await r.json());
-  } catch (e) { $("#out").innerHTML = `<span class="warn">Failed: ${esc(e.message)}</span>`; }
-  $("#go").disabled = false; $("#busy").textContent = "";
+    if ($("#file").files.length) { const f = new FormData(); f.append("file", $("#file").files[0]); r = await fetch("/api/stream/upload", {method: "POST", body: f}); }
+    else r = await fetch("/api/stream/sample", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({path: picked})});
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+    const reader = r.body.getReader(), dec = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream: true});
+      let i;
+      while ((i = buf.indexOf("\n")) >= 0) { const line = buf.slice(0, i); buf = buf.slice(i + 1); if (line.trim()) handle(JSON.parse(line)); }
+    }
+  } catch (err) { setStatus(`<span class="warn">Failed: ${esc(err.message)}</span>`, false); }
+  clearInterval(timer); busy = false; $("#go").disabled = false;
 };
-
-function render(d) {
-  const v = d.verdict || {};
-  const sig = Object.entries(d.signals).map(([k, x]) => `<span>${esc(k)}</span><span>${(+x).toFixed(2)}</span>`).join("");
-  let html = `<div class="row"><span class="badge ${esc(d.final)}">${esc(d.final)}</span>
-    <span>${d.final === "review" ? "sent to a human: the agent said <b>" + esc(v.decision) + "</b>" : ""}</span></div>
-    <div class="kv"><span>defect</span><span><b>${esc(v.defect_type)}</b></span><span>confidence</span><span>${esc(v.confidence)}</span>
-    <span>detector</span><span>${d.detector.score} (normal ≤ ${d.detector.threshold})</span><span>run</span><span>${esc(d.status)}, ${d.tool_calls} tool calls, ${d.seconds}s</span>${sig}</div>
-    <ul>${(v.reasons || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
-  if (d.final !== "review") html += `<div class="row"><button class="ghost" onclick="this.outerHTML='<span class=&quot;warn&quot;>Marked for human review.</span>'">Escalate to human</button></div>`;
-  html += `<h3 style="font-size:15px;margin:18px 0 4px">What the agent did</h3>`;
-  for (const s of d.steps) {
-    if (!s.tool) { html += `<div class="step muted">${esc(s.text)}</div>`; continue; }
-    html += `<div class="step"><code>${esc(s.tool)}(${esc(s.args)})</code><pre>${esc(s.result)}</pre>${s.images.map(u => `<img src="${u}" alt="${esc(s.tool)} image">`).join("")}</div>`;
-  }
-  $("#out").innerHTML = html;
-}
 </script>
 </body>
 </html>

@@ -125,6 +125,12 @@ ONESHOT_PROMPT_SUFFIX = """
 
 For this run you have NO tools except submit_answer. Look at the overview photo carefully and answer directly."""
 
+# UI only: makes the agent's reasoning visible. Off for evaluation runs, so measured results keep the original prompt.
+NARRATE_SUFFIX = """
+
+Narrate your work for the person watching: before every tool call, write one short sentence (max 20 words) saying
+what you are checking and why. Before submit_answer, write one sentence with your conclusion."""
+
 
 class _Recording:
     """Wraps an LLM to remember which model label actually answered (fallback chains can switch)."""
@@ -192,11 +198,11 @@ def overview_image(ins: Inspection):
     return im.to_image_data(im.draw_grid(im.downscale(ins.image, OVERVIEW_SIDE)), "overview with grid")
 
 
-def build_agent(llm: LLM, image_path: Path, res: Resources, *, oneshot: bool = False,
+def build_agent(llm: LLM, image_path: Path, res: Resources, *, oneshot: bool = False, narrate: bool = False,
                 max_steps: int = MAX_STEPS, max_images: int = MAX_IMAGES) -> tuple[Agent, Inspection]:
     ins = Inspection(Path(image_path), res.detector, res.references)
     registry = build_tools(ins, include=() if oneshot else AGENT_TOOLS)
-    prompt = system_prompt(res.taxonomy) + (ONESHOT_PROMPT_SUFFIX if oneshot else "")
+    prompt = system_prompt(res.taxonomy) + (ONESHOT_PROMPT_SUFFIX if oneshot else "") + (NARRATE_SUFFIX if narrate else "")
     agent = Agent(
         llm, registry, prompt,
         max_steps=2 if oneshot else max_steps,
@@ -211,9 +217,10 @@ QUESTION = "Inspect this photo. The overview with the grid is attached."
 
 
 def run_one(image_path: Path | str, llm: LLM, res: Resources, *, oneshot: bool = False, on_event=None,
-            max_steps: int = MAX_STEPS, max_images: int = MAX_IMAGES) -> VerdictRun:
+            narrate: bool = False, max_steps: int = MAX_STEPS, max_images: int = MAX_IMAGES) -> VerdictRun:
     rec = _Recording(llm)
-    agent, ins = build_agent(rec, Path(image_path), res, oneshot=oneshot, max_steps=max_steps, max_images=max_images)
+    agent, ins = build_agent(rec, Path(image_path), res, oneshot=oneshot, narrate=narrate,
+                             max_steps=max_steps, max_images=max_images)
     started = datetime.now(timezone.utc).isoformat(timespec="seconds")
     try:
         first = [overview_image(ins)]

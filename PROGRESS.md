@@ -12,7 +12,7 @@ Claude Code updates this at the end of every milestone. Real results only (model
 | M4 | The agent | done 2026-10-08 | real agent run on a 24-photo dev subset (k=1) | scripted tests pass; first real trace: correct fail, wrong type (cut -> poke) |
 | M5 | Evaluation harness | done 2026-10-08 | detector, one-shot (62) and agent (24) on dev | resumable JSONL + labelled summaries |
 | M6 | Confidence and escalation | dev done, test not run | disagreement signal chosen on dev (AUROC 1.0, but only 1 error in 24); test split untouched |
-| M7 | Demo and pitch | demo done 2026-10-08, pitch not written | UI tested in browser: fold photo -> fail/fold/high, 19.6 s |
+| M7 | Demo and pitch | demo done 2026-10-08 (live view), pitch not written | UI streams steps live (NDJSON): thoughts, zoom box on the photo, tool images |
 | M8 | Stretch | dropped for now | |
 
 ## Data in use
@@ -38,6 +38,7 @@ Claude Code updates this at the end of every milestone. Real results only (model
 - 2026-10-07: Measurement-margin signal (SPEC 5.4) not built separately; the detector-margin signal covers the same idea with less code.
 - 2026-10-07: Detector region picking suppresses a defect's whole halo, so ranked regions are distinct spots (was: 3 boxes around one cut).
 - 2026-10-07: `scripts/download_mvtec_leather.py` fetches leather from the HF mirror and imports it (resumable, cache in `.cache/`).
+- 2026-10-08: UI runs use `narrate=True` (one sentence before each tool call) so viewers see the reasoning; eval runs keep the original prompt, so measured results are unaffected.
 - 2026-10-07: agentkit gained `LLM_EXTRA_BODY_<PROVIDER>` (tested) to pass Ollama-only fields.
 
 ## Results (real runs only)

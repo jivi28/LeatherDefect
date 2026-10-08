@@ -150,3 +150,13 @@ def test_agent_facing_code_never_touches_labels(name):
     src = path.read_text()
     for forbidden in ("ground_truth", "_fake_manifest", "get_split", "load_samples", "allow_test", ".mask"):
         assert forbidden not in src, f"{name} mentions {forbidden}"
+
+
+def test_narration_is_ui_only(world):
+    res, photo = world
+    plain = ScriptedLLM([submit()])
+    A.run_one(photo, plain, res)
+    narrated = ScriptedLLM([submit()])
+    A.run_one(photo, narrated, res, narrate=True)
+    assert plain.calls[0]["messages"][0]["content"] == A.system_prompt(res.taxonomy)  # eval prompt unchanged
+    assert narrated.calls[0]["messages"][0]["content"].endswith(A.NARRATE_SUFFIX)

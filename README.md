@@ -183,9 +183,12 @@ Mark M4-M6 done there. Commit (never `.env`, `data/` or `results/`; they are git
 ```bash
 uvicorn inspector.app.server:app --port 8000          # then open http://localhost:8000
 ```
-Pick a sample photo or upload one, then press Inspect (~20 s). It shows each tool call with its image, the verdict, and the
-final pass/fail/review. Without `results/report.json` (Step 3) it shows the raw agent decision and says so.
-Tested end to end on 2026-10-07: a glue photo came back fail/glue/high in 18 s.
+Pick a sample photo or upload one, then press Inspect. You watch the agent **live** (~20 s): each step appears as it
+happens, with the model's one-line "thinking" before every tool call. The region it zooms into is highlighted on the photo,
+and each close-up / comparison image shows up as it is produced. At the end you get the verdict, the defect box, and the
+final pass/fail/review badge. Without `results/report.json` (Step 3) the badge is the raw agent decision.
+The "thinking" lines come from a UI-only prompt addition (`narrate=True`); evaluation runs use the original prompt.
+Tested 2026-10-08 in the browser: fold/000 came back as agent "pass", escalated to REVIEW by the policy (the detector disagreed).
 
 ### Step 8: Pitch (6 min including Q&A)
 Problem 30 s → live demo 2 min → how it decides (tools + escalation) 1 min → results vs baselines with intervals 1 min →
