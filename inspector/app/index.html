@@ -47,6 +47,8 @@
   .thought::before { content:"thinking · "; font-style:normal; font-size:12px; color:var(--muted) }
   .action { font-weight:600 } .action small { font-weight:400; color:var(--muted) }
   .ev img { max-width:min(100%,420px); border-radius:6px; margin-top:6px; display:block }
+  .verdict-card { border:2px solid var(--accent); background:var(--soft); border-radius:10px; padding:12px }
+  .verdict-card .kv { margin-top:10px }
   details { margin-top:6px } summary { cursor:pointer; color:var(--muted); font-size:12.5px }
   pre { white-space:pre-wrap; font-size:12px; color:var(--muted); margin:6px 0 0; max-height:160px; overflow:auto }
   .kv { display:grid; grid-template-columns:auto 1fr; gap:2px 12px; font-size:13px; margin-top:8px }
@@ -69,7 +71,6 @@
   </div>
   <section class="card">
     <div class="status" id="status"><span class="muted">Pick a photo and press Inspect to watch the agent work live.</span></div>
-    <div id="verdict"></div>
     <div id="timeline" style="margin-top:8px"></div>
   </section>
 </main>
@@ -149,18 +150,23 @@ function finish(d) {
   const v = d.verdict || {};
   settleFocus();
   if (v.region && v.decision === "fail") drawBox([v.region.x0, v.region.y0, v.region.x1, v.region.y1], "final", v.defect_type);
-  setStatus(`<span class="badge ${esc(d.final)}">${esc(d.final)}</span>` +
-    (d.final === "review" ? ` sent to a human (the agent said <b>${esc(v.decision)}</b>)` : "") +
-    ` <span class="muted">${d.seconds}s · ${d.tool_calls} tool calls</span>`, false);
+  const badge = `<span class="badge ${esc(d.final)}">${esc(d.final)}</span>`;
+  setStatus(`Done in ${d.seconds}s: ${badge} <span class="muted">details below</span>`, false);
   const sig = Object.entries(d.signals).map(([k, x]) => `<span>${esc(k)} uncertainty</span><span>${(+x).toFixed(2)}</span>`).join("");
-  $("#verdict").innerHTML = `<div class="kv"><span>defect</span><span><b>${esc(v.defect_type)}</b></span>
+  const card = add(elapsed(), `<div class="verdict-card">
+    <div class="status">${badge}${d.final === "review" ? ` sent to a human (the agent said <b>${esc(v.decision)}</b>)` : ""}
+      <span class="muted">${d.seconds}s · ${d.tool_calls} tool calls</span></div>
+    <div class="kv"><span>defect</span><span><b>${esc(v.defect_type)}</b></span>
     <span>confidence</span><span>${esc(v.confidence)}</span><span>detector</span><span>${d.detector.score} (normal ≤ ${d.detector.threshold})</span>${sig}</div>
     <ul>${(v.reasons || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul>` +
-    (d.final !== "review" ? `<div class="row"><button class="ghost" onclick="this.outerHTML='<span class=&quot;warn&quot;>Marked for human review.</span>'">Escalate to human</button></div>` : "");
+    (d.final !== "review" ? `<div class="row"><button class="ghost" onclick="this.outerHTML='<span class=&quot;warn&quot;>Marked for human review.</span>'">Escalate to human</button></div>` : "") +
+    `</div>`);
+  card.classList.add("final-ev");
+  card.scrollIntoView({block: "start"});  // badge first, even if the card is taller than the screen
 }
 
 $("#go").onclick = async () => {
-  busy = true; $("#go").disabled = true; $("#timeline").innerHTML = ""; $("#verdict").innerHTML = "";
+  busy = true; $("#go").disabled = true; $("#timeline").innerHTML = "";
   t0 = performance.now(); setStatus("Starting…");
   timer = setInterval(() => { const m = $("#status .muted"); if (m && $("#status .spin")) m.textContent = elapsed() + "s"; }, 200);
   try {
